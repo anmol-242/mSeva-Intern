@@ -18,7 +18,7 @@ import { getQueryArg, setBusinessServiceDataToLocalStorage, setDocuments } from 
 import { loadUlbLogo } from "egov-ui-kit/utils/pdfUtils/generatePDF";
 import get from "lodash/get";
 import set from "lodash/set";
-import { findAndReplace, getDescriptionFromMDMS, getSearchResults, getSearchResultsForSewerage, getWaterSource, getWorkFlowData, isModifyMode, serviceConst, swEstimateCalculation, waterEstimateCalculation } from "../../../../ui-utils/commons";
+import { applyForWaterOrSewerage, findAndReplace, getDescriptionFromMDMS, getSearchResults, getSearchResultsForSewerage, getWaterSource, getWorkFlowData, isModifyMode, serviceConst, swEstimateCalculation, waterEstimateCalculation } from "../../../../ui-utils/commons";
 import {
   convertDateToEpoch, createEstimateData,
   getDialogButton, getFeesEstimateOverviewCard,
@@ -157,7 +157,24 @@ const beforeInitFn = async (action, state, dispatch, applicationNumber) => {
       }
       let applyScreenObject = get(state.screenConfiguration.preparedFinalObject, "applyScreen");
       applyScreenObject.applicationNo.includes("WS") ? applyScreenObject.service = serviceConst.WATER : applyScreenObject.service = serviceConst.SEWERAGE;
-      let parsedObject = parserFunction(findAndReplace(applyScreenObject, "NA", null));
+      
+
+
+
+
+
+
+
+//different functions call for sewerage and water connection deoending on the application: by asdeepsingh777
+      let parsedObject = (applyScreenObject.service === "WATER") ? parserFunction(findAndReplace(applyScreenObject, "NA", null)): parserFunctionsw(findAndReplace(applyScreenObject, "NA", null)) ;
+     
+     
+     
+
+
+
+     
+     
       const equals = (a, b) =>
       Object.keys(a).length === Object.keys(b).length 
         && Object.keys(a).every(p => a[p] === b[p]);
@@ -187,12 +204,15 @@ const beforeInitFn = async (action, state, dispatch, applicationNumber) => {
         set(action.screenConfig, "components.div.children.headerDiv.children.header1.children.connection.children.connectionNumber.visible", false);
       }
       if (processInstanceAppStatus === "PENDING_FOR_FIELD_INSPECTION") {
+        
         let queryObjectForEst = [{
           applicationNo: applicationNumber,
           tenantId: tenantId,
           waterConnection: parsedObject
         }]
         if (parsedObject.applicationNo.includes("WS")) {
+         
+          debugger;
           estimate = await waterEstimateCalculation(queryObjectForEst, dispatch);
           let viewBillTooltip = [];
           if (estimate !== null && estimate !== undefined) {
@@ -816,6 +836,7 @@ const screenConfig = {
 
 //----------------- search code (feb17)---------------------- //
 const searchResults = async (action, state, dispatch, applicationNumber, processInstanceAppStatus) => {
+  
   let queryObjForSearch = [{ key: "tenantId", value: tenantId }, { key: "applicationNumber", value: applicationNumber }]
   let viewBillTooltip = [], estimate, payload = [];
   if (service === serviceConst.WATER) {
@@ -838,8 +859,47 @@ const searchResults = async (action, state, dispatch, applicationNumber, process
       if(payload.WaterConnection[0] && Array.isArray(payload.WaterConnection[0].roadCuttingInfo) && payload.WaterConnection[0].roadCuttingInfo.length > 0) {
         payload.WaterConnection[0].roadCuttingInfo = Array.isArray(payload.WaterConnection[0].roadCuttingInfo) && payload.WaterConnection[0].roadCuttingInfo.filter(info => info.status == "ACTIVE");
       }
+      
 
-      payload.WaterConnection[0].additionalDetails.waterSubUsageType = payload.WaterConnection[0].additionalDetails.waterSubUsageType ? payload.WaterConnection[0].additionalDetails.waterSubUsageType : "NA";
+
+
+
+
+
+
+
+
+ // assigning subsuageType and other paramters for estimation: by asdeepsingh777
+      const applyScreen= state.screenConfiguration.preparedFinalObject.applyScreen;
+
+      payload.WaterConnection[0].roadCuttingInfo= applyScreen.roadCuttingInfo ? applyScreen.roadCuttingInfo: NA;
+
+      payload.WaterConnection[0].additionalDetails.waterSubUsageType = applyScreen.additionalDetails.waterSubUsageType ? applyScreen.additionalDetails.waterSubUsageType : "NA";
+
+      payload.WaterConnection[0].additionalDetails.billingType=applyScreen.additionalDetails.billingType;
+
+      payload.WaterConnection[0].additionalDetails.compositionFee=applyScreen.additionalDetails.compositionFee;
+      
+      payload.WaterConnection[0].additionalDetails.connectionCategory=applyScreen.additionalDetails.connectionCategory;
+      
+      payload.WaterConnection[0].additionalDetails.detailsProvidedBy=applyScreen.additionalDetails.detailsProvidedBy;
+      
+      payload.WaterConnection[0].additionalDetails.ledgerId=applyScreen.additionalDetails.ledgerId;
+      
+      payload.WaterConnection[0].additionalDetails.locality=applyScreen.additionalDetails.locality;
+      
+      payload.WaterConnection[0].additionalDetails.othersFee=applyScreen.additionalDetails.othersFee;
+      
+      payload.WaterConnection[0].additionalDetails.userCharges=applyScreen.additionalDetails.userCharges;
+
+
+
+
+
+
+
+
+
       dispatch(prepareFinalObject("WaterConnection[0]", payload.WaterConnection[0]));
       dispatch(prepareFinalObject("WaterConnection[0].roadCuttingInfos", roadCuttingInfos));
       if (get(payload, "WaterConnection[0].property.status", "") !== "ACTIVE") {
@@ -871,6 +931,8 @@ const searchResults = async (action, state, dispatch, applicationNumber, process
         "WS"
       );
     }
+   
+    debugger;
     estimate = await waterEstimateCalculation(queryObjectForEst, dispatch);
     if (estimate !== null && estimate !== undefined) {
       if (estimate.Calculation.length > 0) {
@@ -914,6 +976,48 @@ const searchResults = async (action, state, dispatch, applicationNumber, process
       if(payload.SewerageConnections[0] && Array.isArray(payload.SewerageConnections[0].roadCuttingInfo) && payload.SewerageConnections[0].roadCuttingInfo.length > 0) {
         payload.SewerageConnections[0].roadCuttingInfo = Array.isArray(payload.SewerageConnections[0].roadCuttingInfo) && payload.SewerageConnections[0].roadCuttingInfo.filter(info => info.status == "ACTIVE");
       }
+
+
+
+
+
+
+
+
+
+
+    // assigning subsuageType and other paramters for estimation: by asdeepsingh777
+      const applyScreen= state.screenConfiguration.preparedFinalObject.applyScreen;
+
+      payload.SewerageConnections[0].roadCuttingInfo = applyScreen.roadCuttingInfosw ? applyScreen.roadCuttingInfosw: NA;
+
+      payload.SewerageConnections[0].additionalDetails.waterSubUsageType = applyScreen.additionalDetails.waterSubUsageType ? applyScreen.additionalDetails.waterSubUsageType : "NA";
+
+      payload.SewerageConnections[0].additionalDetails.billingType=applyScreen.additionalDetails.billingType;
+
+      payload.SewerageConnections[0].additionalDetails.compositionFee=applyScreen.additionalDetails.compositionFee;
+      
+      payload.SewerageConnections[0].additionalDetails.connectionCategory=applyScreen.additionalDetails.connectionCategory;
+      
+      payload.SewerageConnections[0].additionalDetails.detailsProvidedBy=applyScreen.additionalDetails.detailsProvidedBy;
+      
+      payload.SewerageConnections[0].additionalDetails.ledgerId = applyScreen.additionalDetails.ledgerId;
+      
+      payload.SewerageConnections[0].additionalDetails.locality=applyScreen.additionalDetails.locality;
+      
+      payload.SewerageConnections[0].additionalDetails.othersFee=applyScreen.additionalDetails.othersFee;
+      
+      payload.SewerageConnections[0].additionalDetails.userCharges=applyScreen.additionalDetails.userCharges;
+
+
+
+
+
+
+
+
+
+
       dispatch(prepareFinalObject("SewerageConnection[0]", payload.SewerageConnections[0]));
       dispatch(prepareFinalObject("WaterConnection[0]", payload.SewerageConnections[0]));
       dispatch(prepareFinalObject("SewerageConnection[0].roadCuttingInfos", roadCuttingInfos));
@@ -989,6 +1093,7 @@ const parserFunction = (obj) => {
     proposedWaterClosets: parseInt(obj.proposedWaterClosets),
     proposedToilets: parseInt(obj.proposedToilets),
     roadCuttingArea: parseInt(obj.roadCuttingArea),
+    
     additionalDetails: {
       initialMeterReading: (
         obj.additionalDetails !== undefined &&
@@ -1009,6 +1114,7 @@ const parserFunction = (obj) => {
       userCharges: waterDetails && waterDetails ? parseFloat(waterDetails.userCharges) : null,
       othersFee: waterDetails && waterDetails ? parseFloat(waterDetails.othersFee) : null,
       unitUsageType: waterDetails && waterDetails ? waterDetails.unitUsageType : null,
+      waterSubUsageType: waterDetails && waterDetails ? waterDetails.waterSubUsageType : null,
       //meterStatus: waterDetails && waterDetails ? waterDetails.meterStatus : null,
       // detailsProvidedBy : null,
       adhocPenalty: null,
@@ -1029,6 +1135,76 @@ const parserFunction = (obj) => {
   obj = { ...obj, ...parsedObject }
   return obj;
 }
+
+
+
+
+
+
+
+
+//different parser function for setting sewerage data : by asdeepsingh777
+const parserFunctionsw = (obj) => {
+  let waterDetails = get(obj, "additionalDetails", {});
+let parsedObject = {
+  roadCuttingInfo: obj.roadCuttingInfosw,
+  roadCuttingArea: parseInt(obj.roadCuttingInfosw[0].roadCuttingArea),
+  meterInstallationDate: convertDateToEpoch(obj.meterInstallationDate),
+  connectionExecutionDate: convertDateToEpoch(obj.connectionExecutionDate),
+  proposedWaterClosets: parseInt(obj.proposedWaterClosets),
+  proposedToilets: parseInt(obj.proposedToilets),
+  roadCuttingArea: parseInt(obj.roadCuttingInfosw[0].roadCuttingArea),
+  additionalDetails: {
+    initialMeterReading: (
+      obj.additionalDetails !== undefined &&
+      obj.additionalDetails.initialMeterReading !== undefined
+    ) ? parseFloat(obj.additionalDetails.initialMeterReading) : null,
+    detailsProvidedBy: (
+      obj.additionalDetails !== undefined &&
+      obj.additionalDetails.detailsProvidedBy !== undefined &&
+      obj.additionalDetails.detailsProvidedBy !== null
+    ) ? obj.additionalDetails.detailsProvidedBy : "",
+    billingType: waterDetails && waterDetails ? waterDetails.billingType : null,
+    billingAmount: waterDetails && waterDetails ? parseFloat(waterDetails.billingAmount) : null,
+    connectionCategory: waterDetails && waterDetails ? waterDetails.connectionCategory : null,
+    ledgerId: waterDetails && waterDetails ? parseFloat(waterDetails.ledgerId) : null,
+    avarageMeterReading: waterDetails && waterDetails ? parseFloat(waterDetails.avarageMeterReading) : null,
+    meterMake: waterDetails && waterDetails ? parseFloat(waterDetails.meterMake) : null,
+    compositionFee: waterDetails && waterDetails ? parseFloat(waterDetails.compositionFeesw) : null,
+    userCharges: waterDetails && waterDetails ? parseFloat(waterDetails.userChargessw) : null,
+    othersFee: waterDetails && waterDetails ? parseFloat(waterDetails.othersFeesw) : null,
+    unitUsageType: waterDetails && waterDetails ? waterDetails.unitUsageType : null,
+    waterSubUsageType: waterDetails && waterDetails ? waterDetails.waterSubUsageType : null,
+    //meterStatus: waterDetails && waterDetails ? waterDetails.meterStatus : null,
+    // detailsProvidedBy : null,
+    adhocPenalty: null,
+    adhocPenaltyComment: null,
+    adhocPenaltyReason: null,
+    adhocRebate: null,
+    adhocRebateComment: null,
+    adhocRebateReason: null,
+    estimationFileStoreId: null,
+    sanctionFileStoreId: null,
+    estimationLetterDate: null,
+  },
+  dateEffectiveFrom: convertDateToEpoch(obj.dateEffectiveFrom),
+  noOfTaps: parseInt(obj.noOfTaps),
+  proposedTaps: parseInt(obj.proposedTaps),
+  plumberInfo: (obj.plumberInfo === null || obj.plumberInfo === "NA") ? [] : obj.plumberInfo
+}
+obj = { ...obj, ...parsedObject }
+return obj;
+}
+
+
+
+
+
+
+
+
+
+
 
 const processBills = async (data, viewBillTooltip, dispatch) => {
   let des, obj, groupBillDetails = [];
